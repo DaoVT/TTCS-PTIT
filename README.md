@@ -1,6 +1,6 @@
-# NutriCoach AI
+# NutriCoach
 
-NutriCoach AI là hệ thống hỗ trợ quản lý dinh dưỡng và theo dõi sức khỏe cá nhân được xây dựng bằng ReactJS và FastAPI.
+NutriCoach là hệ thống hỗ trợ quản lý dinh dưỡng và theo dõi sức khỏe cá nhân được xây dựng bằng ReactJS và FastAPI.
 
 ## Features
 
