@@ -1,28 +1,21 @@
+import random
+
+from datetime import date
+
 from fastapi import APIRouter
-
-from app.schemas.ai import MealSuggestionRequest
-
-from sqlalchemy.orm import Session
-
 from fastapi import Depends
 
-from app.dependencies import get_db
-
-from app.models.food import Food
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.dependencies import get_db
 
-from sqlalchemy.orm import Session
-from fastapi import Depends
-
 from app.models.user import User
-from app.models.health_profile import HealthProfile
-
-from sqlalchemy import func
-
+from app.models.food import Food
 from app.models.meal import Meal
 from app.models.nutrition_log import NutritionLog
+from app.models.health_profile import HealthProfile
 
 router = APIRouter(
     prefix="/ai",
@@ -31,71 +24,18 @@ router = APIRouter(
 
 @router.post("/meal-suggestion")
 def meal_suggestion(
-    payload: MealSuggestionRequest,
-    db: Session = Depends(get_db)
-):
-
-    foods = (
-        db.query(Food)
-        .order_by(Food.protein.desc())
-        .all()
-    )
-
-    selected_foods = []
-
-    total_calories = 0
-
-    for food in foods:
-
-        if (
-            total_calories + food.calories
-            <= payload.max_calories
-        ):
-
-            selected_foods.append(food)
-
-            total_calories += food.calories
-
-    return {
-
-        "title": "AI Meal Suggestion",
-
-        "calories": round(
-            total_calories,
-            2
-        ),
-
-        "foods": [
-            food.name
-            for food in selected_foods
-        ]
-    }
-
-from sqlalchemy import func
-
-from app.models.food import Food
-from app.models.meal import Meal
-from app.models.nutrition_log import NutritionLog
-from app.models.health_profile import HealthProfile
-
-from app.auth import get_current_user
-from app.dependencies import get_db
-
-from sqlalchemy.orm import Session
-
-from fastapi import Depends
-
-
-@router.get("/weight-prediction")
-def predict_weight(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(
+        get_current_user
+    ),
     db: Session = Depends(get_db)
 ):
 
     profile = (
         db.query(HealthProfile)
         .filter(
-            HealthProfile.user_id == current_user.id
+            HealthProfile.user_id
+            ==
+            current_user.id
         )
         .first()
     )
@@ -103,7 +43,228 @@ def predict_weight(
     if not profile:
 
         return {
-            "message": "Profile not found"
+            "message":
+                "Profile not found"
+        }
+
+    eaten_calories = (
+        db.query(
+            func.sum(
+                (
+                    Food.calories
+                    *
+                    NutritionLog.quantity
+                )
+                /
+                Food.serving_size
+            )
+        )
+        .join(
+            NutritionLog,
+            Food.id ==
+            NutritionLog.food_id
+        )
+        .join(
+            Meal,
+            Meal.id ==
+            NutritionLog.meal_id
+        )
+        .filter(
+            Meal.user_id ==
+            current_user.id,
+            Meal.meal_date ==
+            date.today()
+        )
+        .scalar()
+    )
+
+    eaten_calories = (
+        eaten_calories or 0
+    )
+
+    remaining_calories = max(
+        0,
+        int(
+            profile.daily_target_calories
+            -
+            eaten_calories
+        )
+    )
+
+    if profile.goal == "lose_weight":
+
+        candidate_foods = (
+            db.query(Food)
+            .filter(
+                Food.calories < 180
+            )
+            .all()
+        )
+
+        explanation = (
+            "Selected low-calorie and high-protein foods to support weight loss."
+        )
+
+    elif profile.goal == "gain_muscle":
+
+        candidate_foods = (
+            db.query(Food)
+            .filter(
+                Food.protein >= 10
+            )
+            .all()
+        )
+
+        explanation = (
+            "Selected protein-rich foods to support muscle growth."
+        )
+
+    else:
+
+        candidate_foods = (
+            db.query(Food)
+            .all()
+        )
+
+        explanation = (
+            "Selected balanced foods suitable for weight maintenance."
+        )
+
+    if len(candidate_foods) < 3:
+
+        candidate_foods = (
+            db.query(Food)
+            .all()
+        )
+
+    selected_foods = random.sample(
+        candidate_foods,
+        3
+    )
+
+    suggested_foods = []
+
+    total_calories = 0
+
+    for food in selected_foods:
+
+        quantity = random.choice(
+            [
+                100,
+                150,
+                200
+            ]
+        )
+
+        calories = round(
+            (
+                float(
+                    food.calories
+                )
+                *
+                quantity
+            )
+            /
+            float(
+                food.serving_size
+            ),
+            0
+        )
+
+        total_calories += calories
+
+        suggested_foods.append(
+            {
+                "name":
+                    food.name,
+
+                "quantity":
+                    quantity,
+
+                "unit":
+                    food.unit,
+
+                "calories":
+                    calories,
+
+                "protein":
+                    round(
+                        (
+                            float(
+                                food.protein
+                            )
+                            *
+                            quantity
+                        )
+                        /
+                        float(
+                            food.serving_size
+                        ),
+                        1
+                    )
+            }
+        )
+
+    meal_score = min(
+        100,
+        70 +
+        random.randint(
+            10,
+            25
+        )
+    )
+
+    return {
+
+        "goal":
+            profile.goal,
+
+        "remaining_calories":
+            remaining_calories,
+
+        "foods":
+            suggested_foods,
+
+        "total_calories":
+            total_calories,
+
+        "meal_score":
+            meal_score,
+
+        "explanation":
+            (
+                f"{explanation} "
+                f"This meal uses approximately "
+                f"{total_calories} kcal from your "
+                f"remaining {remaining_calories} kcal."
+            )
+    }
+
+
+
+@router.get("/weight-prediction")
+def predict_weight(
+    current_user: User = Depends(
+        get_current_user
+    ),
+    db: Session = Depends(get_db)
+):
+
+    profile = (
+        db.query(HealthProfile)
+        .filter(
+            HealthProfile.user_id
+            ==
+            current_user.id
+        )
+        .first()
+    )
+
+    if not profile:
+
+        return {
+            "message":
+                "Profile not found"
         }
 
     daily_calories = (
@@ -113,18 +274,23 @@ def predict_weight(
             func.sum(
                 Food.calories *
                 NutritionLog.quantity
-            ).label("calories")
+            ).label(
+                "calories"
+            )
         )
         .join(
             NutritionLog,
-            Meal.id == NutritionLog.meal_id
+            Meal.id ==
+            NutritionLog.meal_id
         )
         .join(
             Food,
-            Food.id == NutritionLog.food_id
+            Food.id ==
+            NutritionLog.food_id
         )
         .filter(
-            Meal.user_id == current_user.id
+            Meal.user_id ==
+            current_user.id
         )
         .group_by(
             Meal.meal_date
@@ -136,17 +302,22 @@ def predict_weight(
 
         return {
             "message":
-            "No meal data found"
+                "No meal data found"
         }
 
     total_calories = sum(
-        float(day.calories)
+        float(
+            day.calories
+        )
         for day in daily_calories
     )
 
     average_daily_calories = (
-        total_calories /
-        len(daily_calories)
+        total_calories
+        /
+        len(
+            daily_calories
+        )
     )
 
     current_weight = float(
@@ -158,24 +329,28 @@ def predict_weight(
     )
 
     daily_difference = (
-        average_daily_calories -
+        average_daily_calories
+        -
         tdee
     )
 
     def predict(days):
 
         total_difference = (
-            daily_difference *
+            daily_difference
+            *
             days
         )
 
         weight_change = (
-            total_difference /
+            total_difference
+            /
             7700
         )
 
         return round(
-            current_weight +
+            current_weight
+            +
             weight_change,
             2
         )
@@ -183,10 +358,16 @@ def predict_weight(
     return {
 
         "current_weight":
-            round(current_weight, 2),
+            round(
+                current_weight,
+                2
+            ),
 
         "tdee":
-            round(tdee, 2),
+            round(
+                tdee,
+                2
+            ),
 
         "average_daily_calories":
             round(

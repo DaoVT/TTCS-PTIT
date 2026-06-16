@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 class RegisterRequest(BaseModel):
     email: str
-    phone: str
     password: str
 
 

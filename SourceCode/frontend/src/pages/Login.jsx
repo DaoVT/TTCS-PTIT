@@ -25,23 +25,40 @@ export default function Login() {
 
         try {
 
+    
             const response =
                 await api.post(
                     "/auth/login",
-                    {
-                        email,
-                        password
-                    }
-                );
+                        {
+                            email,
+                            password
+                        }
+                    );
 
             localStorage.setItem(
                 "token",
                 response.data.access_token
             );
 
-            navigate(
-                "/dashboard"
+            const profile = await api.get(
+                "/profile"
             );
+
+            if (
+                !profile.data.profile_completed
+            ) {
+
+                navigate(
+                    "/profile-setup"
+                );
+
+            } else {
+
+                navigate(
+                    "/dashboard"
+                );
+            }
+
 
         } catch {
 

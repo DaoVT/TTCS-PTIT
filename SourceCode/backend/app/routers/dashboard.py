@@ -35,7 +35,12 @@ def dashboard(
         )
         .first()
     )
+    if profile is None:
 
+        return {
+            "message": "Profile not setup",
+            "profile_completed": False
+        }
     nutrition = (
         db.query(
             func.sum(

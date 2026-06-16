@@ -326,7 +326,7 @@ export default function MealsSection({ refreshDashboard }) {
                                         text-gray-500
                                         "
                                     >
-                                        Meal Entry
+                                        {meal.foods?.join(", ")}
                                     </p>
 
                                 </div>

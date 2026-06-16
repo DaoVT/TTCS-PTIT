@@ -2,127 +2,124 @@ import {
     useState,
     useEffect
 } from "react";
-import { useNavigate } from "react-router-dom";
+
+import { useNavigate }
+from "react-router-dom";
+
 import api from "../services/api";
 
 export default function ProfileSetup() {
-    useEffect(() => {
 
-        loadProfile();
-
-    }, []);
     const navigate =
         useNavigate();
 
     const [form, setForm] =
         useState({
+
             age: "",
+
             gender: "",
+
             height_cm: "",
+
             weight_kg: "",
+
             activity_level_id: "",
+
             goal: "",
+
             diet_preferences: []
         });
+
+    useEffect(() => {
+
+        loadProfile();
+
+    }, []);
+
     const loadProfile =
         async () => {
 
-        try {
+            try {
 
-            const token =
-                localStorage.getItem(
-                    "token"
-                );
+                const response =
+                    await api.get(
+                        "/profile"
+                    );
 
-            const response =
-                await api.get(
-                    "/profile",
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`
-                        }
-                    }
-                );
+                if (
+                    response.data.profile_completed
+                ) {
 
-            if (response.data) {
+                    setForm({
 
-                setForm({
+                        age:
+                            response.data.age || "",
 
-                    age:
-                        response.data.age,
+                        gender:
+                            response.data.gender || "",
 
-                    gender:
-                        response.data.gender,
+                        height_cm:
+                            response.data.height_cm || "",
 
-                    height_cm:
-                        response.data.height_cm,
+                        weight_kg:
+                            response.data.weight_kg || "",
 
-                    weight_kg:
-                        response.data.weight_kg,
+                        activity_level_id:
+                            response.data.activity_level_id || "",
 
-                    activity_level_id:
-                        response.data.activity_level_id,
+                        goal:
+                            response.data.goal || "",
 
-                    goal:
-                        response.data.goal,
-                    diet_preferences: []
-                });
-            }
-        } catch (error) {
-
-            console.log(form);
-
-        }
-    };
-    const handleChange = (
-        e
-    ) => {
-
-        setForm({
-            ...form,
-            [e.target.name]:
-                e.target.value
-        });
-    };
-
-    const saveProfile = async (
-        e
-    ) => {
-
-        e.preventDefault();
-
-        try {
-
-            const token =
-                localStorage.getItem(
-                    "token"
-                );
-            console.log(form);
-            await api.post(
-                "/profile/setup",
-                form,
-                {
-                    headers: {
-                        Authorization:
-                            `Bearer ${token}`
-                    }
+                        diet_preferences: []
+                    });
                 }
-            );
 
-            navigate(
-                "/dashboard"
-            );
+            } catch {
 
-        } catch (error) {
+                console.log(
+                    "New user"
+                );
+            }
+        };
 
-            console.log(error);
+    const handleChange =
+        (e) => {
 
-            alert(
-                "Cannot save profile"
-            );
-        }
-    };
+            setForm({
+
+                ...form,
+
+                [e.target.name]:
+                    e.target.value
+            });
+        };
+
+    const saveProfile =
+        async (e) => {
+
+            e.preventDefault();
+
+            try {
+
+                await api.post(
+                    "/profile/setup",
+                    form
+                );
+
+                navigate(
+                    "/dashboard"
+                );
+
+            } catch (error) {
+
+                console.log(error);
+
+                alert(
+                    "Cannot save profile"
+                );
+            }
+        };
 
     return (
 
@@ -173,16 +170,13 @@ export default function ProfileSetup() {
                         mt-2
                         "
                     >
-                        Let's calculate your
-                        nutrition goals
+                        Let's calculate your nutrition goals
                     </p>
 
                 </div>
 
                 <form
-                    onSubmit={
-                        saveProfile
-                    }
+                    onSubmit={saveProfile}
                     className="
                     grid
                     grid-cols-2
@@ -200,9 +194,7 @@ export default function ProfileSetup() {
                             type="number"
                             name="age"
                             value={form.age}
-                            onChange={
-                                handleChange
-                            }
+                            onChange={handleChange}
                             className="
                             w-full
                             border
@@ -224,12 +216,8 @@ export default function ProfileSetup() {
 
                         <select
                             name="gender"
-                            value={
-                                form.gender
-                            }
-                            onChange={
-                                handleChange
-                            }
+                            value={form.gender}
+                            onChange={handleChange}
                             className="
                             w-full
                             border
@@ -238,7 +226,12 @@ export default function ProfileSetup() {
                             py-3
                             mt-2
                             "
+                            required
                         >
+
+                            <option value="">
+                                Select Gender
+                            </option>
 
                             <option value="male">
                                 Male
@@ -261,12 +254,8 @@ export default function ProfileSetup() {
                         <input
                             type="number"
                             name="height_cm"
-                            value={
-                                form.height_cm
-                            }
-                            onChange={
-                                handleChange
-                            }
+                            value={form.height_cm}
+                            onChange={handleChange}
                             className="
                             w-full
                             border
@@ -289,12 +278,8 @@ export default function ProfileSetup() {
                         <input
                             type="number"
                             name="weight_kg"
-                            value={
-                                form.weight_kg
-                            }
-                            onChange={
-                                handleChange
-                            }
+                            value={form.weight_kg}
+                            onChange={handleChange}
                             className="
                             w-full
                             border
@@ -315,13 +300,9 @@ export default function ProfileSetup() {
                         </label>
 
                         <select
-                            name="activity_level"
-                            value={
-                                form.activity_level
-                            }
-                            onChange={
-                                handleChange
-                            }
+                            name="activity_level_id"
+                            value={form.activity_level_id}
+                            onChange={handleChange}
                             className="
                             w-full
                             border
@@ -330,25 +311,26 @@ export default function ProfileSetup() {
                             py-3
                             mt-2
                             "
+                            required
                         >
 
-                            <option value="sedentary">
+                            <option value="">
+                                Select Activity
+                            </option>
+
+                            <option value="1">
                                 Sedentary
                             </option>
 
-                            <option value="light">
-                                Light
+                            <option value="2">
+                                Light Exercise
                             </option>
 
-                            <option value="moderate">
-                                Moderate
+                            <option value="3">
+                                Moderate Exercise
                             </option>
 
-                            <option value="active">
-                                Active
-                            </option>
-
-                            <option value="very_active">
+                            <option value="4">
                                 Very Active
                             </option>
 
@@ -364,12 +346,8 @@ export default function ProfileSetup() {
 
                         <select
                             name="goal"
-                            value={
-                                form.goal
-                            }
-                            onChange={
-                                handleChange
-                            }
+                            value={form.goal}
+                            onChange={handleChange}
                             className="
                             w-full
                             border
@@ -378,18 +356,23 @@ export default function ProfileSetup() {
                             py-3
                             mt-2
                             "
+                            required
                         >
 
-                            <option value="lose">
+                            <option value="">
+                                Select Goal
+                            </option>
+
+                            <option value="lose_weight">
                                 Lose Weight
                             </option>
 
                             <option value="maintain">
-                                Maintain
+                                Maintain Weight
                             </option>
 
-                            <option value="gain">
-                                Gain Weight
+                            <option value="gain_muscle">
+                                Gain Muscle
                             </option>
 
                         </select>
@@ -413,6 +396,7 @@ export default function ProfileSetup() {
                             py-4
                             rounded-xl
                             font-semibold
+                            transition
                             "
                         >
                             Save Profile

@@ -75,7 +75,21 @@ def get_today_meals(
     result = []
 
     for meal in meals:
-
+        foods = (
+            db.query(Food.name)
+            .join(
+                NutritionLog,
+                Food.id == NutritionLog.food_id
+            )
+            .filter(
+                NutritionLog.meal_id == meal.id
+            )
+            .all()
+        )        
+        food_names = [
+            food.name
+            for food in foods
+        ]
         total_calories = (
             db.query(
                 func.sum(
@@ -102,6 +116,7 @@ def get_today_meals(
             {
                 "meal_id": meal.id,
                 "meal_type": meal.meal_type,
+                "foods": food_names,
                 "calories": total_calories or 0
             }
         )

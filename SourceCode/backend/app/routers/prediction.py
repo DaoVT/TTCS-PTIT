@@ -16,6 +16,7 @@ router = APIRouter(
 
 @router.get("/weight")
 def predict_weight(
+    weeks: int = 12,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -35,7 +36,7 @@ def predict_weight(
 
     predictions = []
 
-    for week in range(13):
+    for week in range(weeks + 1):
 
         if profile.goal == "lose_weight":
 

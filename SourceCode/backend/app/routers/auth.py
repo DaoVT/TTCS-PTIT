@@ -46,7 +46,6 @@ def register(
 
     user = User(
         email=payload.email,
-        phone=payload.phone,
         password_hash=hashed_password
     )
 

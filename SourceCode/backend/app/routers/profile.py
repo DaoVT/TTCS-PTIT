@@ -144,32 +144,29 @@ def get_profile(
             HealthProfile
         )
         .filter(
-            HealthProfile.user_id
-            ==
-            current_user.id
+            HealthProfile.user_id == current_user.id
         )
         .first()
     )
 
+    if profile is None:
+        return {
+            "profile_completed": False,
+        }
     return {
+        "profile_completed": True,
 
-        "age":
-            profile.age,
+        "age": profile.age,
 
-        "gender":
-            profile.gender,
+        "gender": profile.gender,
 
-        "height_cm":
-            profile.height_cm,
+        "height_cm": profile.height_cm,
 
-        "weight_kg":
-            float(
-                profile.weight_kg
-            ),
+        "weight_kg": float(profile.weight_kg),
 
         "activity_level_id":
             profile.activity_level_id,
 
-        "goal":
-            profile.goal
+        "goal": profile.goal
     }
+    
